@@ -5,6 +5,8 @@
 # Outputs stored in
 #     evaluate/figures/boxplot_{metric}.png  for each metric
 #     evaluate/figures/boxplot_all.png       combined figure
+#
+# Again, this works only for the initial models, created with the old scripts
 
 import os
 import pandas as pd
@@ -45,7 +47,7 @@ METRIC_LABELS = {
     "precision": "Precision",
 }
 
-COLOR   = "#4C72B0"   # blue
+COLOR   = "#4C72B0"   # blue, ion like it, it needs to be tweaked
 
 def plot_single_metric(df: pd.DataFrame, metric: str, ax: plt.Axes, model_order: list):
     """Draw one boxplot panel onto ax."""

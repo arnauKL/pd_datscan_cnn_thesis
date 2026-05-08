@@ -313,8 +313,7 @@ def main():
           f"roi_size={roi_size} | epochs={args.epochs}")
 
     # Build transform (same for all folds)
-    _, transform, _ = build_model_and_transform(
-        args.model, args.data, roi_size, args.dropout)
+    _, transform, _ = build_model_and_transform(args.model, args.data, roi_size, args.dropout)
 
     # Output dir
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")

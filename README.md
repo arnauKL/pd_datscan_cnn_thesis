@@ -1,3 +1,3 @@
 # Bachelor's thesis source code
 
-It's a work in progress.
+Combination of scripts, data, results I used for my thesis.
