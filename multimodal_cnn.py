@@ -4,14 +4,12 @@
 # This notebook implements and compares three fusion strategies for combining your best pretrained CNN with clinical tabular data from PPMI.
 # 
 # ## Structure
-# 1. **Config** -> set paths and feature groups here
-# 2. **Data loading** -> merge image paths with tabular features
-# 3. **Late fusion** -> combine existing CNN output probabilities with tabular-only ML
-# 4. **Feature fusion** -> strip CNN head, concatenate embeddings with tabular branch
-# 5. **Information gain table** -> compare all combinations
-# 6. **Visualisation** -> boxplots
-# 
-# **Before running:** make sure your best CNN weights `.pth` file is available and your PPMI excel/csv is loaded.
+# 1. Config -> set paths and feature groups here
+# 2. Data loading -> merge image paths with tabular features
+# 3. Late fusion -> combine existing CNN output probabilities with tabular-only ML
+# 4. Feature fusion -> strip CNN head, concatenate embeddings with tabular branch
+# 5. Information gain table -> compare all combinations
+# 6. Visualisation -> boxplots
 
 # %% [markdown]
 # ## 0. Imports
@@ -46,8 +44,6 @@ fm.fontManager.addfont("/home/akarel/.local/share/fonts/LinLibertine_R.ttf")  # 
 matplotlib.rcParams["font.family"] = "Linux Libertine"
 matplotlib.rcParams["font.size"] = 14
 
-
-
 sys.path.insert(0, os.path.abspath('..'))
 from src.architectures import ParkinsonClassifier2D, ParkinsonClassifier25D
 from src.transforms import get_2d_sum_transforms_padding, get_25d_transforms_padding
@@ -55,12 +51,6 @@ from src.transforms import get_2d_sum_transforms_padding, get_25d_transforms_pad
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Using device: {device}')
 
-# %% [markdown]
-# ## Config
-# 
-# Set your file paths and choose which tabular feature groups to experiment with.
-
-# %%
 fIn = '/home/data/PPMI/documents/PPMI_Curated_Data_Cut_Public_20240729.xlsx'
 fOut = '/home/akarel/src_tfg/data/ppmi_tabular.csv'
 
@@ -149,7 +139,6 @@ print(merged[all_features].isnull().sum())
 
 # %%
 # Drop rows with missing values in any feature group
-# Note: in your thesis you should discuss this — imputation is an alternative
 merged_clean = merged.dropna(subset=all_features).reset_index(drop=True)
 print(f'After dropping NaN rows: {len(merged_clean)} patients')
 
@@ -178,11 +167,12 @@ def compute_metrics(labels, probs):
 # ## Late fusion (baseline)
 # 
 # No new training needed:
-# - Your CNN already outputs a probability for each patient
+# - THe CNN already outputs a probability for each patient
 # - Train a simple LR/SVM on tabular features
 # - Average both probability outputs
 # 
-# This is a quick sanity check. If feature fusion later doesn't beat this, something is wrong with the fusion architecture.
+# This is a quick sanity check.
+# If feature fusion later doesn't beat this, something is wrong with the fusion architecture.
 
 # %%
 def get_cnn_probabilities(df, model_class, weights_path, transform, embed_dim, device, extract_embedding=False):
@@ -279,11 +269,14 @@ late_fusion_results['late_ALL'] = run_late_fusion_cv(balanced, all_cols)
 # %% [markdown]
 # ## Feature fusion (bouzas mode)
 # 
-# Strip the CNN head -> get a learned image embedding -> concatenate with tabular features -> train a small MLP fusion head.
+# Strip the CNN head ->
+#     get a learned image embedding ->
+#         concatenate with tabular features ->
+#             train a small MLP fusion head.
 # 
 # The CNN backbone can be:
-# - **Frozen** (`FREEZE_CNN=True`): only the fusion head trains. Faster, avoids overfitting on small data. Good first run.
-# - **Unfrozen** (`FREEZE_CNN=False`): full end-to-end fine-tuning. Better if you have enough data.
+# - Frozen (`FREEZE_CNN=True`): only the fusion head trains. Faster, avoids overfitting on small data. Good first run.
+# - Unfrozen (`FREEZE_CNN=False`): full end-to-end fine-tuning.
 
 # %%
 class MultimodalDataset(Dataset):
@@ -316,9 +309,9 @@ class MultimodalDataset(Dataset):
 class MultimodalFusionModel(nn.Module):
     """
     Y-shaped architecture:
-      - CNN branch: pretrained backbone with head removed → image_embed_dim
-      - Tabular branch: small MLP → tabular_hidden
-      - Fusion head: concat → MLP → logit
+      - CNN branch: pretrained backbone with head removed -> image_embed_dim
+      - Tabular branch: small MLP -> tabular_hidden
+      - Fusion head: concat -> MLP -> logit
     """
     def __init__(self, cnn_backbone, image_embed_dim, n_tabular,
                  tabular_hidden=16, dropout_rate=0.3, freeze_cnn=True):
@@ -470,7 +463,6 @@ config_to_save = {
 }
 with open(os.path.join(run_dir, "config.json"), "w") as f:
     json.dump(config_to_save, f, indent=4)
-
 
 #  RE-RUN FEATURE FUSION, saving best model per group per fold
 # We re-run the feature fusion loop here so we can intercept the
