@@ -53,7 +53,8 @@ from src.architectures import (
     ParkinsonClassifier3D_deeper,
     ParkinsonClassifier2D,
     ParkinsonClassifier25D,
-    ParkinsonClassifierMed3D
+    ParkinsonClassifierMed3D,
+    ParkinsonClassifierMed3DEncoder
 )
 from src.transforms import (
     get_3d_transforms,
@@ -118,9 +119,18 @@ def build_model_and_transform(model_key: str, data_key: str, roi_size: tuple, dr
                     else get_3d_padding_cropping_transforms(roi_size))
         split_lr  = True   # lower LR on backbone, higher on head: same as 25d
 
+    elif model_key == "med3d_encoder":
+        model     = ParkinsonClassifierMed3DEncoder(
+                        dropout_rate=dropout,
+                        weights_path="mednetWeights/pretrain/resnet_10.pth",
+                        roi_size=roi_size)
+        transform = (get_3d_transforms(roi_size) if registered
+                     else get_3d_padding_cropping_transforms(roi_size))
+        split_lr  = True
+
     else:
         # Thx Francesc Castro
-        raise ValueError(f"Unknown model key: '{model_key}'. Choose from: 3d_crop, 3d_crop_deeper, 2d_sum, 25d_resnet, med3d")
+        raise ValueError(f"Unknown model key: '{model_key}'. Choose from: 3d_crop, 3d_crop_deeper, 2d_sum, 25d_resnet, med3d, med3d_encoder")
 
     return model, transform, split_lr
 
@@ -297,7 +307,7 @@ def parse_args():
                    choices=["registered", "raw"],
                    help="Which image set to use")
     p.add_argument("--model",      required=True,
-                   choices=["3d_crop", "3d_crop_deeper", "2d_sum", "25d_resnet", "med3d"],
+                   choices=["3d_crop", "3d_crop_deeper", "2d_sum", "25d_resnet", "med3d", "med3d_encoder"],
                    help="Model + transform combination")
     p.add_argument("--folds",      type=int,   default=2,
                    help="Number of CV folds (2 = fast screening, 5 = final)")

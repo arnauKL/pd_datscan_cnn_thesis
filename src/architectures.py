@@ -264,3 +264,90 @@ class ParkinsonClassifierMed3D(nn.Module):
         x = self.gap(x).view(x.size(0), -1)   # (B, 512)
         x = self.dropout(x)
         return self.fc(x)                     # (B, 1)
+
+class ParkinsonClassifierMed3DEncoder(nn.Module):
+    """
+    MedicalNet ResNet-10 used as a pure ENCODER for classification.
+
+    Difference from ParkinsonClassifierMed3D:
+    - Explicitly loads ONLY encoder layer weights (conv1, bn1, layer1-4)
+    this is what I should've done from the start but i forgor
+
+    - conv_seg (decoder/segmentation head) is never instantiated
+    - Cleaner weight loading with explicit key filtering
+    - More aggressive classification head to compensate for
+      the smaller feature set vs the full segmentation network
+
+    Input : (B, 1, H, W, D)
+    Output: (B, 1)  raw logit
+    """
+    def __init__(self,
+                 dropout_rate=0.3,
+                 weights_path="mednetWeights/pretrain/resnet_10.pth",
+                 roi_size=(76, 76, 76)):
+        super().__init__()
+
+        from src.resnet import resnet10
+
+        # Build full network (needed to load weights correctly)
+        full_net = resnet10(
+            sample_input_D=roi_size[0],
+            sample_input_H=roi_size[1],
+            sample_input_W=roi_size[2],
+            num_seg_classes=2,
+            shortcut_type="B",
+            no_cuda=False,
+        )
+
+        # Load pretrained weights
+        if weights_path and os.path.exists(weights_path):
+            checkpoint = torch.load(weights_path, map_location="cpu")
+            state = checkpoint.get("state_dict", checkpoint)
+            state = {k.replace("module.", ""): v for k, v in state.items()}
+
+            # ENCODER ONLY: explicitly filter to just the encoder keys
+            encoder_keys = {"conv1", "bn1", "layer1", "layer2", "layer3", "layer4"}
+            encoder_state = {
+                k: v for k, v in state.items()
+                if k.split(".")[0] in encoder_keys
+            }
+            missing, unexpected = full_net.load_state_dict(
+                encoder_state, strict=False)
+            loaded = len(encoder_state)
+            print(f"  Med3D encoder: loaded {loaded} weight tensors")
+            print(f"  Missing: {len(missing)}  Unexpected: {len(unexpected)}")
+        else:
+            print(f"  [WARN] No weights at {weights_path}, training from scratch")
+
+        # Copy ONLY encoder layers
+        self.conv1   = full_net.conv1
+        self.bn1     = full_net.bn1
+        self.relu    = full_net.relu
+        self.maxpool = full_net.maxpool
+        self.layer1  = full_net.layer1
+        self.layer2  = full_net.layer2
+        self.layer3  = full_net.layer3
+        self.layer4  = full_net.layer4
+
+        # Classification head, slightly deeper than before
+        # layer4 outputs 512 channels with BasicBlock
+        self.gap     = nn.AdaptiveAvgPool3d(1)
+        self.head    = nn.Sequential(
+            nn.Dropout(dropout_rate),
+            nn.Linear(512, 64),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(64, 1),
+        )
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.gap(x).view(x.size(0), -1)
+        return self.head(x)
