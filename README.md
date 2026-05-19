@@ -32,4 +32,4 @@ This source code is licensed under the [BSD 3-Clause License](LICENSE).
 
 ## Thesis report
 
-See my other repository hosting my report [here](github.com/arnauKL/tfg_writing) to find the full pdf and its source code.
+See my other repository hosting my report [here](https://github.com/arnauKL/tfg_writing) to find the full pdf and its source code.
