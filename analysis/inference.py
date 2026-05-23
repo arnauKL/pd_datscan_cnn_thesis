@@ -51,7 +51,7 @@ CONFIG = {
 # config to add/remove prodromal in case I'd got them
 GROUP_ORDER  = ["HC", "PD", "SWEDD"] #, "Prodromal"]
 GROUP_COLORS = {
-    "HC":        "#4C72B0",   # blue
+    "HC":        "#444499",   # purple
     "PD":        "#DD8452",   # orange
     "SWEDD":     "#55A868",   # green
     #"Prodromal": "#C44E52",   # red

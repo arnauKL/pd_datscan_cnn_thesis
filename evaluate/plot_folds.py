@@ -21,7 +21,6 @@ OUTPUTS_DIR = "outputs"
 FIGURES_DIR = "evaluate/figures"
 os.makedirs(FIGURES_DIR, exist_ok=True)
 
-# TODO: ask adrià if these are enough
 METRICS     = ["auc", "f1", "accuracy", "recall", "precision"]
 
 METRIC_LABELS = {
@@ -34,8 +33,8 @@ METRIC_LABELS = {
 
 # Color per data source, still needs to be tweaked
 COLOR = {
-    "registered": "#4C72B0",   # blue
-    "raw":        "#55A868",   # green
+    "registered": "#444499",   # signature purple
+    "raw":        "#55A868",   # 
     "unknown":    "#aaaaaa",   # grey (old-format runs without data tag)
 }
 
@@ -163,20 +162,20 @@ def main():
     for metric in METRICS:
         if metric not in df.columns:
             continue
-        fig, ax = plt.subplots(figsize=(max(6, len(model_order) * 1.6), 5))
+        fig, ax = plt.subplots(figsize=(len(model_order), 6))
         plot_metric(df, metric, ax, model_order)
-        ax.set_title(f"Model comparison — {METRIC_LABELS.get(metric, metric)}",
-                     fontsize=12, pad=10)
+        ax.set_title(f"Model comparison: {METRIC_LABELS.get(metric, metric)}",
+                     fontsize=13, pad=10)
         ax.legend(handles=legend_handles, fontsize=8, loc="lower right")
         fig.tight_layout()
         out = os.path.join(FIGURES_DIR, f"boxplot_{metric}.svg")
-        fig.savefig(out, dpi=160)
+        fig.savefig(out)
         plt.close(fig)
         print(f"Saved: {out}")
 
     # Combined figure
     n = len(METRICS)
-    fig, axes = plt.subplots(1, n, figsize=(n * max(5, len(model_order) * 1.4), 5))
+    fig, axes = plt.subplots(1, n, figsize=(n * len(model_order), 4))
     if n == 1:
         axes = [axes]
 
@@ -191,7 +190,7 @@ def main():
     axes[-1].legend(handles=legend_handles, fontsize=8, loc="lower right")
     fig.tight_layout()
     out_all = os.path.join(FIGURES_DIR, "boxplot_all.svg")
-    fig.savefig(out_all, dpi=160, bbox_inches="tight")
+    fig.savefig(out_all, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out_all}")
 
@@ -211,7 +210,6 @@ def main():
     for m in METRICS:
         print(f"  {m:^13}", end="")
     print()
-    print("-" * (30 + 15 * len(METRICS)))
 
     for lbl in model_order:
         r = summary.loc[lbl]

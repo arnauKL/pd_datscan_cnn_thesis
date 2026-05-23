@@ -220,6 +220,9 @@ shap_abs = np.abs(shap_values)  # (N, 1, H, W, D)
 shap_pd = shap_abs[pd_idx].mean(axis=0).squeeze()  # (H, W, D)
 shap_hc = shap_abs[hc_idx].mean(axis=0).squeeze()  # (H, W, D)
 
+print(shap_pd.shape)
+print(shap_hc.shape)
+
 plot_shap_3d(shap_pd, "shap_3d_PD.svg", "Mean SHAP, PD patients")
 plot_shap_3d(shap_hc, "shap_3d_HC.svg", "Mean SHAP, HC patients")
 

@@ -1,5 +1,5 @@
 """
-GradCAM explainability for 2D and 2.5D CNN models.
+GradCAM explainability for 2.5D CNN models.
 
 GradCAM produces a heatmap showing which spatial regions of the input
 image most influenced the model's prediction. For DaTSCAN this will hopefully
@@ -7,7 +7,7 @@ highlight the striatum (caudate + putamen) if the model is working correctly.
 
 For 2.5D (3-channel orthogonal MIP input):
   - GradCAM runs on the last conv layer of the ResNet
-  - Produces one heatmap per input channel (axial/coronal/sagittal)
+  - Produces one heatmap per input channel (axial/coronal/sagittal), TODO
 
 Output: analysis/outputs/gradcam/
   gradcam_PD_examples.svg
@@ -70,7 +70,6 @@ target_layers = [model.features[7][1].conv2]  # layer4, second BasicBlock
 
 transform = get_25d_transforms_padding(CONFIG["roi_size"])
 
-
 # Load test images
 df       = pd.read_csv(CONFIG["data_csv"])
 pd_df    = df[df["label"] == 1]
@@ -112,7 +111,6 @@ def run_gradcam_batch(group_df, group_name, n_show):
 
     cams, imgs_display, imgs_raw, preds = [], [], [], []
 
-
     for i in range(min(n_show, len(group_df))):
         row    = group_df.iloc[i]
         tensor = load_image_tensor(row).to(device)
@@ -133,7 +131,6 @@ def run_gradcam_batch(group_df, group_name, n_show):
         if grayscale_cam.ndim == 3:
             grayscale_cam = grayscale_cam.mean(axis=0)
         cams.append(grayscale_cam)  # now always (H, W)
-        imgs_display.append(img_rgb)
         preds.append(prob)
         print(f"  {group_name} patient {i+1}: PD prob={prob:.3f}")
 
@@ -185,7 +182,7 @@ def plot_gradcam_examples(cams, imgs_tensor, preds, true_label, filename):
                 axes[ch, i].set_ylabel(CHANNEL_NAMES[ch], fontsize=8)
         
         # i do not need the average, this should be in the 'for ch in range(3)' loop
-        avg = img_np.mean(axis=0)     # (H, W) — average over the 3 channels
+        avg = img_np.mean(axis=0)     # (H, W), average over the 3 channels
         avg_norm = (avg - avg.min()) / (avg.max() - avg.min() + 1e-8)
         avg_rgb = np.stack([avg_norm, avg_norm, avg_norm], axis=-1).astype(np.float32)
         overlay = show_cam_on_image(avg_rgb, cams[i], use_rgb=True)
