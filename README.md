@@ -1,11 +1,14 @@
-# Parkinson's Disease Prediction via DaTscan CNNs and Multimodal ML
+# Deep Learning-Based Classification of Parkinson's Disease from DaTscan Images
 
-Source code for my bachelor's thesis, which explores the use of CNNs on DaTscan imaging,
-classical ML baselines on tabular data, and multimodal fusion for Parkinson's disease prediction.
+Source code accompanying the bachelor's thesis *Deep Learning-Based
+Classification of Parkinson’s Disease from DaTscan Images*. The project
+evaluates convolutional neural networks on DaTscan SPECT imaging, classical
+machine learning baselines on semi-quantitative clinical variables, and
+multimodal fusion approaches for Parkinson’s disease classification.
 
 ## Repository Structure
 
-- [`src/`](src/): Core building blocks shared across experiments:
+- [`src/`](src/): Shared components used across experiments:
   - `architectures.py`: custom CNN architectures
   - `transforms.py`: MONAI image transforms
   - `resnet.py`: adapted from [MedicalNet](https://github.com/Tencent/MedicalNet.git)
@@ -25,11 +28,18 @@ classical ML baselines on tabular data, and multimodal fusion for Parkinson's di
 - pandas, numpy
 - SHAP, grad-cam
 
+## Reproducibility
+
+Experiments were developed and evaluated using stratified cross-validation
+protocols. Configuration parameters, preprocessing pipelines, and evaluation
+utilities are included in the repository to facilitate reproducibility.
 
 ## License
 
-This source code is licensed under the [BSD 3-Clause License](LICENSE).
+The source code is distributed under the BSD 3-Clause License. See [`LICENSE`](LICENSE) for details.
 
 ## Thesis report
 
-See my other repository hosting my report [here](https://github.com/arnauKL/tfg_writing) to find the full pdf and its source code.
+The accompanying thesis manuscript, including the Typst source code and compiled
+report, is available in the [companion
+repository](https://github.com/arnauKL/tfg_writing)
