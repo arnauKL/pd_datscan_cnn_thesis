@@ -464,7 +464,7 @@ config_to_save = {
 with open(os.path.join(run_dir, "config.json"), "w") as f:
     json.dump(config_to_save, f, indent=4)
 
-#  RE-RUN FEATURE FUSION, saving best model per group per fold
+# RE-RUN FEATURE FUSION, saving best model per group per fold
 # We re-run the feature fusion loop here so we can intercept the
 # trained model at the end of each fold and save its weights.
 # The late fusion results don't involve a trainable PyTorch model
