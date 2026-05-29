@@ -1,9 +1,6 @@
-# %% [markdown]
-# # Multimodal Fusion: DaTSCAN CNN + Clinical Tabular Features
+# This script implements and compares three fusion strategies for combining your best pretrained CNN with clinical tabular data from PPMI.
 # 
-# This notebook implements and compares three fusion strategies for combining your best pretrained CNN with clinical tabular data from PPMI.
-# 
-# ## Structure
+# Structure
 # 1. Config -> set paths and feature groups here
 # 2. Data loading -> merge image paths with tabular features
 # 3. Late fusion -> combine existing CNN output probabilities with tabular-only ML
@@ -11,10 +8,6 @@
 # 5. Information gain table -> compare all combinations
 # 6. Visualisation -> boxplots
 
-# %% [markdown]
-# ## 0. Imports
-
-# %%
 import os, sys, json
 import numpy as np
 import pandas as pd
@@ -48,7 +41,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from src.architectures import ParkinsonClassifier2D, ParkinsonClassifier25D
 from src.transforms import get_2d_sum_transforms_padding, get_25d_transforms_padding
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(f'Using device: {device}')
 
 fIn = '/home/data/PPMI/documents/PPMI_Curated_Data_Cut_Public_20240729.xlsx'
@@ -57,8 +50,6 @@ fOut = '/home/akarel/src_tfg/data/ppmi_tabular.csv'
 df = pd.read_excel(fIn, engine='openpyxl')
 df.to_csv(fOut, index=False)
 
-# %%
-# Paths 
 IMAGE_CSV    = 'data/ppmi_rawdata_sesBL_mapping.csv'   # raw image mapping
 TABULAR_CSV  = 'data/ppmi_tabular.csv'                 # PPMI excel exported as csv
 
@@ -72,7 +63,7 @@ ROI_SIZE    = (76, 76, 76)
 TRANSFORM   = get_25d_transforms_padding(ROI_SIZE)
 
 # Training hyperparams
-FOLDS       = 2
+FOLDS       = 5
 EPOCHS      = 50       # fusion head trains faster than a full CNN hopefully
 LR          = 1e-4
 BATCH_SIZE  = 8
@@ -97,23 +88,18 @@ PATIENT_ID_COL = 'PATNO'
 print('Config loaded.')
 print(f'Feature groups: {list(FEATURE_GROUPS.keys())}')
 
-# %% [markdown]
-# ### Load n merge data
-# 
+### Load n merge data
 # Join image mapping CSV with the tabular PPMI data on patient ID, I'm keeping the rawdata mapping
 
-# %%
 img_df = pd.read_csv(IMAGE_CSV)
 tab_df = pd.read_csv(TABULAR_CSV)
 
 print(f'Image CSV:    {len(img_df)} rows, columns: {list(img_df.columns)}')
 print(f'Tabular CSV:  {len(tab_df)} rows')
 
-# %%
 # print(f'\nTabular CSV columns: {list(tab_df.columns)}')
 # print(f'\nImage CSV columns: {list(img_df.columns)}')
 
-# %%
 # Merge on patient ID
 # Keep only baseline visit tabular data if there are multiple timepoints
 tab_df = tab_df[tab_df['EVENT_ID'] == 'BL']
@@ -137,7 +123,6 @@ print(f'After merge: {len(merged)} patients with both image and tabular data')
 print(f'Missing values per feature:')
 print(merged[all_features].isnull().sum())
 
-# %%
 # Drop rows with missing values in any feature group
 merged_clean = merged.dropna(subset=all_features).reset_index(drop=True)
 print(f'After dropping NaN rows: {len(merged_clean)} patients')
@@ -149,10 +134,7 @@ balanced = pd.concat([hc_df, pd_df]).reset_index(drop=True)
 print(f'Balanced: {len(balanced)} total ({len(hc_df)} HC, {len(hc_df)} PD)')
 balanced.head()
 
-# %% [markdown]
-# ## Helper: metrics for one fold
 
-# %%
 def compute_metrics(labels, probs):
     preds = (probs > 0.5).astype(int)
     return {
@@ -163,8 +145,7 @@ def compute_metrics(labels, probs):
         'precision': precision_score(labels, preds, zero_division=0),
     }
 
-# %% [markdown]
-# ## Late fusion (baseline)
+## Late fusion (baseline)
 # 
 # No new training needed:
 # - THe CNN already outputs a probability for each patient
@@ -174,7 +155,6 @@ def compute_metrics(labels, probs):
 # This is a quick sanity check.
 # If feature fusion later doesn't beat this, something is wrong with the fusion architecture.
 
-# %%
 def get_cnn_probabilities(df, model_class, weights_path, transform, embed_dim, device, extract_embedding=False):
     """
     Run inference with the full CNN and return probabilities (or embeddings).
@@ -212,7 +192,6 @@ def get_cnn_probabilities(df, model_class, weights_path, transform, embed_dim, d
     
     return np.array(all_out), np.array(all_labels)
 
-# %%
 def run_late_fusion_cv(df, feature_cols, n_folds=FOLDS, alpha=0.5):
     """
     Late fusion: average CNN probabilities with tabular LR probabilities.
@@ -249,7 +228,6 @@ def run_late_fusion_cv(df, feature_cols, n_folds=FOLDS, alpha=0.5):
     
     return pd.DataFrame(fold_metrics)
 
-# %%
 # Run late fusion for each feature group + all combined
 late_fusion_results = {}
 
@@ -266,8 +244,7 @@ all_cols = [f for group in FEATURE_GROUPS.values() for f in group if f in balanc
 print(f'\nLate fusion, ALL features: {all_cols}')
 late_fusion_results['late_ALL'] = run_late_fusion_cv(balanced, all_cols)
 
-# %% [markdown]
-# ## Feature fusion (bouzas mode)
+# Feature fusion (bouzas mode)
 # 
 # Strip the CNN head ->
 #     get a learned image embedding ->
@@ -278,7 +255,6 @@ late_fusion_results['late_ALL'] = run_late_fusion_cv(balanced, all_cols)
 # - Frozen (`FREEZE_CNN=True`): only the fusion head trains. Faster, avoids overfitting on small data. Good first run.
 # - Unfrozen (`FREEZE_CNN=False`): full end-to-end fine-tuning.
 
-# %%
 class MultimodalDataset(Dataset):
     """
     Wraps a MONAI transform pipeline and also returns tabular features.
@@ -342,8 +318,7 @@ class MultimodalFusionModel(nn.Module):
         tab_emb = self.tabular_branch(tabular) # (B, tabular_hidden)
         fused   = torch.cat([img_emb, tab_emb], dim=1)
         return self.head(fused)                # (B, 1)
-
-# %%
+    
 def build_cnn_backbone(model_class, weights_path, embed_dim, device):
     """Load pretrained CNN and remove its classification head."""
     model = model_class(dropout_rate=DROPOUT)
