@@ -105,7 +105,7 @@ for ax, metric in zip(axes, METRICS_TO_PLOT):
 
     ax.set_title(metric.upper(), fontsize=14, pad=10)
     all_vals = np.concatenate(data)
-    ax.set_ylim(max(0, min(all_vals) - 0.015), 1)
+    ax.set_ylim(max(min(all_vals) - 0.015, 0.6))
     ax.grid(axis='y', alpha=0.2, linestyle='--')
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)

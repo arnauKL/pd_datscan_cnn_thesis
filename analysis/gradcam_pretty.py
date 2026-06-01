@@ -21,7 +21,7 @@ from src.transforms import get_25d_transforms_padding
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
-# Academic font styling configuration
+
 import matplotlib.font_manager as fm
 import matplotlib
 

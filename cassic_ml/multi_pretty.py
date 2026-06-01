@@ -128,7 +128,6 @@ for fs_name, (X_d, y_d, feats) in prepared.items():
 
 # Output Markdown Table directly to terminal, incredibly fansi
 print(pd.DataFrame(table_rows).to_markdown(index=False))
-print("="*80)
 
 # Information Gain Plot
 plot_metrics = {
