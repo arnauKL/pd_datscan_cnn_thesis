@@ -80,7 +80,6 @@ def build_model_and_transform(model_key: str, data_key: str, roi_size: tuple, dr
 
     needs_pretrained_lr_split is True for 25d_resnet so I can use a lower LR for the backbone and a higher one for the head
     I might not even use this.
-    
 
     Oju!
     All the parameters are very case-and-ortography-sensitive

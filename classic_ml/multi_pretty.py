@@ -30,6 +30,48 @@ RANDOM_STATE = 42
 CV_FOLDS = 5
 
 df = pd.read_excel(DATA_PATH, header=0)
+
+
+
+
+# Deduplicate: one row per patient (ses-BL only)
+
+# ------ The fix -----------------------
+
+PATIENT_COL = "PATNO"
+SESSION_COL  = "EVENT_ID"
+BASELINE_TAG = "BL"
+
+print(f"Raw table: {df.shape[0]} rows, {df[PATIENT_COL].nunique()} unique patients")
+
+# Check how many patients appear more than once
+n_duplicated = df[PATIENT_COL].duplicated(keep=False).sum()
+print(f"Rows belonging to patients with >1 visit: {n_duplicated}")
+
+# Prefer baseline visit; fall back to the first available visit for patients
+# who have no BL row (aka enrolled mid-study)
+bl_mask   = df[SESSION_COL] == BASELINE_TAG
+df_bl     = df[bl_mask]
+df_no_bl  = df[~bl_mask & ~df[PATIENT_COL].isin(df_bl[PATIENT_COL])]
+
+# For the no-BL group, keep whichever row comes first in the table
+df_no_bl_first = df_no_bl.groupby(PATIENT_COL, sort=False).first().reset_index()
+
+df = pd.concat([df_bl, df_no_bl_first], ignore_index=True)
+
+print(f"After deduplication: {df.shape[0]} rows, {df[PATIENT_COL].nunique()} unique patients")
+print(f"    kept as BL      : {len(df_bl)}")
+print(f"    kept as earliest: {len(df_no_bl_first)}")
+
+# ---------------------------------------
+
+
+
+
+
+
+
+
 df[LABEL_COL] = df[LABEL_COL].map({1: 1, 2: 0})
 df.dropna(subset=[LABEL_COL], inplace=True)
 df[LABEL_COL] = df[LABEL_COL].astype(int)

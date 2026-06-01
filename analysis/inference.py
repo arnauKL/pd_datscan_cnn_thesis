@@ -58,7 +58,7 @@ GROUP_COLORS = {
 }
 
 os.makedirs(CONFIG["output_dir"], exist_ok=True)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 # Load model
